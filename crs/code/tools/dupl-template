@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+
+
+## -------------------------------------------------------------------
+
+$/="##DUPLEND\n";	# set record separator
+$dupl=1;
+$atsift=shift();
+$numfbs=shift();
+
+while(<>)
+{
+  #warn "------------------------record is $_\n";
+  if ($atsift){ s/AT_SIFT=0/AT_SIFT=1/;}
+  if ($numfbs){ s/XXXNUMFBSXXX/$numfbs/;}
+  if (/^##DUPL\s*:\s*(\d+)/)
+    {
+	warn "setting dupl to $1\n";
+	$dupl = $1;
+	s/\/\*\s*DUPL:\s*\d+\s*\*\///;
+	$orig = $_;
+	
+	for ($i=0;$i<$dupl;$i++)
+	  {
+                $offset=$i+12345;
+		warn "creating fb$i with port $offset\n";
+		s/XXXFBBASEPORTXXX/$offset/g;
+		s/\@/$i/g;
+		print;
+		$_=$orig;
+	  }
+	$dupl=1;
+    }
+  else { print; }
+#  if (/^\}/)
+#    {
+#	$dupl=1;
+#	print;
+#    }
+}

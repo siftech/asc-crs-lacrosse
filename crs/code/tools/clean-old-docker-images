@@ -1,0 +1,51 @@
+#!/bin/bash
+
+echo "Starting the cleanup process..."
+
+# Get all unique repositories
+REPOSITORIES=$(docker images --format "{{.Repository}}" | sort | uniq)
+
+# Loop through each repository
+for REPO in $REPOSITORIES; do
+    echo "Processing repository: $REPO"
+
+    # Get a list of image IDs for the repository, sorted by creation date (newest first)
+    IMAGE_LIST=$(docker images --format "{{.ID}} {{.Repository}}:{{.Tag}}" | grep $REPO | sort -k2 -r)
+    echo "Full image list for $REPO:"
+    echo "$IMAGE_LIST"
+
+    IMAGE_IDS=$(echo "$IMAGE_LIST" | awk '{print $1}')
+
+    # Get the latest image ID (first one in the sorted list)
+    LATEST_IMAGE_ID=$(echo "$IMAGE_IDS" | head -n 1)
+    echo "Latest image ID for $REPO: $LATEST_IMAGE_ID"
+
+    # Get all other image IDs (excluding the latest one)
+    OLD_IMAGE_IDS=$(echo "$IMAGE_IDS" | tail -n +2)
+
+    if [ -z "$OLD_IMAGE_IDS" ]; then
+        echo "No old images to remove for $REPO."
+    else
+        echo "Old image IDs for $REPO:"
+        echo "$OLD_IMAGE_IDS"
+
+        # Remove old images
+        for IMAGE_ID in $OLD_IMAGE_IDS; do
+            echo "Checking references for image: $IMAGE_ID"
+            REFERENCES=$(docker images --format "{{.ID}} {{.Repository}}:{{.Tag}}" | grep $IMAGE_ID)
+            echo "References found:"
+            echo "$REFERENCES"
+
+            echo "Removing image: $IMAGE_ID"
+            docker rmi --force $IMAGE_ID
+            if [ $? -eq 0 ]; then
+                echo "Successfully removed image: $IMAGE_ID"
+            else
+                echo "Failed to remove image: $IMAGE_ID"
+            fi
+        done
+    fi
+done
+
+echo "Cleanup process completed."
+

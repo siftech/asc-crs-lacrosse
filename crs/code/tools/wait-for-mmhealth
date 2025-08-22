@@ -1,0 +1,8 @@
+#!/bin/bash
+thisdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd -P "$( dirname "$SOURCE" )" && /bin/pwd )"
+mmhealth=$thisdir/../matchmaker/mmhealth
+if [ ! -f $mmhealth ]; then
+    echo "$mmhealth not found!"
+    # FIXME return error code?
+fi
+until $mmhealth ; do sleep 1; done

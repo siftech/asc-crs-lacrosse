@@ -1,0 +1,55 @@
+#!/bin/bash
+# NF specific wrapper for start-image, adds project-wide mounts and defs
+
+if [ "$#" == "0" ]; then
+	echo "Usage: $0 imagename other-docker-run-args"
+	exit 1
+fi
+
+PROGNAME=$(basename "$0")
+warn()  { echo "$PROGNAME: ${@}" 1>&2; }
+die()   { warn "${@}"; exit 1; }
+dbug()   { test -z $DEBUG || warn "${@}"; }
+
+# example usage:
+   #dbug This only prints if DEBUG is defined
+   #test -e foo || die file foo must exist
+   #test -z $FOO && die Environment variable FOO must be defined
+
+# bash-ism to get location of script.  Must use /bin/pwd to get absolute path.
+thisdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd -P "$( dirname "$SOURCE" )" && /bin/pwd )"
+dbug thisdir is $thisdir
+
+IMAGE=$1
+dbug image arg is $IMAGE
+shift	# drop the first arg
+
+# If you are in a docker, this will already be set and will be used for any future start-image calls for mounting the project home dir.
+HOST_LACROSSE_HOME=${HOST_LACROSSE_HOME:-${thisdir}/../..}    # Note this must be an absolute path, docker insists for mounts; hence /bin/pwd above
+dbug HOST_LACROSSE_HOME is $HOST_LACROSSE_HOME
+
+
+DEFAULT_OPENAI_API_KEY=""
+OPENAI_API_KEY=${OPENAI_API_KEY:-$DEFAULT_OPENAI_API_KEY}
+
+DEFAULT_ANTHROPIC_API_KEY=""
+ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-$DEFAULT_ANTHROPIC_API_KEY}
+
+$thisdir/start-image $IMAGE \
+	-v $HOST_LACROSSE_HOME:$HOST_LACROSSE_HOME \
+        -e HOST_LOGDIR\
+	-v /tmp:/tmp \
+	-e "HOST_LACROSSE_HOME=$HOST_LACROSSE_HOME" \
+	-e "LACROSSE_HOME=$HOST_LACROSSE_HOME" \
+	-e "TOOL_DIR=$HOST_LACROSSE_HOME/code/tools" \
+	-e "PRT_DIR=$HOST_LACROSSE_HOME/code/prt" \
+	-e "DOCKER_SUBNET=$DOCKER_SUBNET" \
+ 	-e PI\
+	-e PI_USER\
+	-e POV_SERVER_PORT\
+	-e POV_SERVER_IP\
+	-e XDG_RUNTIME_DIR \
+        -e DOCKER_HOST \
+        -e "OPENAI_API_KEY=$OPENAI_API_KEY" \
+        -e "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" \
+	"$@"

@@ -1,0 +1,49 @@
+# NOTE you cannot use inline comments-- do not put a comment at end of line, you'll get a very obscure error.
+
+FROM ubuntu:16.04
+
+COPY slime-v2.20.tar.gz /
+RUN (cd /usr/local/; tar zxf /slime-v2.20.tar.gz; ln -s slime-2.20 slime) && rm -f /slime-v2.20.tar.gz
+
+RUN apt-get update; apt-get -y install build-essential gosu vim sudo curl flex acl ssh rsync patchelf && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+
+# Now install a ccl.  (Based on https://github.com/daewok/lisp-devel-docker)
+ADD ccl-1.11.5-linuxx86.tar.gz /usr/local/src
+ENV CCL_DEFAULT_DIRECTORY /usr/local/src/ccl
+
+RUN ln -s /usr/local/src/ccl/scripts/ccl64 /usr/local/bin/ccl && \
+    ln -s /usr/local/src/ccl/scripts/ccl /usr/local/bin/ccl32
+
+COPY asdf-3.3.1.6.lisp /usr/local/src/ccl/tools/
+RUN (cd /usr/local/src/ccl/tools/; mv asdf.lisp asdf-3.1.5.lisp; ln -s asdf-3.3.1.6.lisp asdf.lisp)
+
+# Ubuntu comes with /bin/sh linked to dash; that can cause issues b/c doesnt support expected redirection syntax.
+# web suggested just linking bash to it...but.. that seems wrong given diff b/w bourne shell expected syntax, but whatever.
+RUN ln -f /bin/bash /bin/sh
+
+# Here's the realuser stuff we have from other projects, to make the user ID same as who runs it (on cgc-submit)
+
+RUN groupadd sift && useradd -m -g sift realuser && adduser realuser sudo
+
+
+RUN chmod -R 777 /home/realuser /usr/local/slime-2.20 && \
+        echo root:sift | chpasswd
+
+# get Docker; sudo apt-get docker does not give you the thing you want; this does.
+#	 per https://stackoverflow.com/questions/30379381/docker-command-not-found-even-though-installed-with-apt-get
+RUN curl -sSL https://get.docker.com/ | sh
+
+# this stuff often changes, so do it near-last to leverage caching
+COPY realuser.sh clinit.cl bashrc /
+RUN ln -s /clinit.cl /home/realuser/.clinit.cl && \
+	ln -s /clinit.cl /root/.clinit.cl && \
+	ln -s /clinit.cl /root/ccl-init.lisp && \
+	ln -s /clinit.cl /home/realuser/ccl-init.lisp && \
+	ln -s -f /bashrc /root/.bashrc && \
+	ln -s -f /bashrc /home/realuser/.bashrc && \
+	touch /home/realuser/.uDrawGraph3.1.1 && \
+	mkdir /neo-fuzz 
+
+ENTRYPOINT ["/bin/sh", "/realuser.sh"]
+CMD ["/bin/bash"]

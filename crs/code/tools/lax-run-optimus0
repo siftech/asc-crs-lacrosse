@@ -1,0 +1,80 @@
+#!/bin/bash
+# no args; hardwired for OPT0 so he can compile-lisp and start mm 
+
+# FIXME if we want multiple OPT this needs to take args like run-ccl-agent
+# FIXME and would need a start-matchmaker arg too
+
+# if AT_SIFT, logs go to logdir; otherwise stdout for visibility through docker log of svc ctr
+
+thisdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd -P "$( dirname "$SOURCE" )" && /bin/pwd )"
+export CIRCA_MM_HOST=localhost
+export CIRCA_BASEPORT=10000
+export AGENT_NAME=OPTIMUS0
+
+export DOCKER_EXTRA_ARGS="-e CP_BASE_EXTRA_CFLAGS=-g -e CP_BASE_EXTRA_CXXFLAGS=-g -e CP_HARNESS_EXTRA_CFLAGS=-g -e CP_HARNESS_EXTRA_CXXFLAGS=-g"
+
+echo pwd:
+/bin/pwd
+echo whoami:
+whoami
+echo about to compile
+../tools/lax-compile-lisp
+echo compile finished
+
+if [ "${AT_SIFT}" -eq "0" ]; then echo "AT_SIFT is set to 0"; else \
+  echo "AT_SIFT is set to 1. Create LOGDIR."
+# find the most recent logdir and write there, if you find one, else /crs_scratch per competition
+	LOGDIR=`find /lacrosse/code/test/results/ -mindepth 1 -maxdepth 3 -type d -printf "%T@\t%p\n" | sort -n | cut -f2- | tail -n1`
+	LOGDIR=${LOGDIR:-/crs_scratch} ;
+fi
+
+pushd ../matchmaker
+make mmkiller
+popd
+# attempt to kill the old crs mm
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+CIRCA_MM_HOST=crs $thisdir/../matchmaker/mmkiller
+sleep 5
+
+echo Setting timestamp for this run
+date "+%Y-%m-%d-%H%M-%N" > /crs_scratch/timestamp
+
+echo about to start mm
+../matchmaker/lax-ensure-new-matchmaker
+echo mm startup finished
+/bin/pwd
+whoami
+
+# if [ "${AT_SIFT}" -eq "0" ]; then
+#   # FIXME If the CRS ever restarts then mm-is-up will already exist.
+#   # This could confuse restarting FUZZBOMBs.
+#   # It might be better for FUZZBOMB to try to do a health check on the matchmaker.
+#   touch ${AIXCC_CRS_SCRATCH_SPACE}/mm-is-up
+# fi
+
+cd ../lisp
+# this is *exactly* the same as how normal run-ccl-agent works... except redirect output to files b/c 
+# docker compose wont let me stash em right
+#CIRCA_MM_HOST=${CIRCA_MM_HOST} \
+#  CIRCA_BASEPORT=${CIRCA_BASEPORT} \
+if [ "${AT_SIFT}" -eq "0" ]; then 
+  echo "${AGENT_NAME} running NOT at SIFT"
+  ccl -Q -n -l load.lisp -e "(progn (setf *fb-instance* \"${AGENT_NAME}\") (load \"/lacrosse/code/experiment.lisp\") (fb::run-amp :name \"${AGENT_NAME}\") (quit))";
+else
+  echo "${AGENT_NAME} running at SIFT"
+  ccl -Q -n -l load.lisp -e "(progn (setf *fb-instance* \"${AGENT_NAME}\") (load \"../experiment.lisp\") (fb::run-amp :name \"${AGENT_NAME}\") (quit))" 1>$LOGDIR/OPTIMUS0.log 2>&1; 
+fi

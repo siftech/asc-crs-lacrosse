@@ -1,0 +1,31 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use FindBin qw($Bin);
+
+# now we get conditional on which cluster we are on.  This is one of the few scripts that
+# has this conditionalization, the others mostly get node names from the contents of the cluster-allocation file
+my $thishost=`hostname`;
+chomp $thishost;
+my $prefix="";
+
+my $hostnum = shift();
+
+
+if ( $thishost eq "ubuntu" ) {
+	$prefix="ubuntu";
+	}
+else { die "Unknown cluster host $thishost; edit sshc for a new cluster\n"; }
+
+my $host = "$hostnum";
+if ($host =~ m/^\d+$/ ) { $host = "$prefix$hostnum";}
+my $start=time;
+system "ssh -o ServerAliveInterval=30  -o LogLevel=Error -A -o StrictHostKeyChecking=no -o 'ControlPath /tmp/ssh-%r@%h:%p' -o 'ControlMaster auto' -o 'ControlPersist  4h' $host @ARGV";
+my $retval=$?;
+my $end=time;
+if ($retval == 65280 && ($end-$start <2)) {	# unusual immediate exit code from when controlmaster stuff pukes as hitting MaxSessions
+  #print "retrying once after 1s sleep\n";
+  sleep(1);
+  exec "ssh -o ServerAliveInterval=60 -o LogLevel=Error -A $host @ARGV";	# retry without controlmaster
+}

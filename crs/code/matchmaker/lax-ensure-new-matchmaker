@@ -1,0 +1,14 @@
+#!/bin/bash
+# runs inside, eg, OPT0 ctr (unlike normal)
+thisdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd -P "$( dirname "$SOURCE" )" && pwd )"
+if ! [ -x $thisdir/mm ]; then
+   (cd $thisdir/../matchmaker; make)
+fi
+if ! [ -x $thisdir/mmhealth ]; then
+   (cd $thisdir/../matchmaker; make)
+fi
+$thisdir/mmkiller	# try to be nice
+pkill -9 -u $USER mm	# then be mean
+#sleep 1 &
+#wait
+$thisdir/mm &

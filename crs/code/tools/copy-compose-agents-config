@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -e
+toolsdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd -P "$( dirname "$SOURCE" )" && pwd )"
+pushd "$toolsdir"
+
+resultsdir=$1
+
+echo "copying compose agent config to $resultsdir"
+
+cp ../../../cp_config/cp_config.yaml $resultsdir/cp_config.yaml
+cp ../../../compose.yaml $resultsdir/compose.yaml
+cp ../../../compose_local_overrides.yaml $resultsdir/compose_local_overrides.yaml
+cp ../experiment.lisp $resultsdir/experiment.lisp
+cp ../../../kompose_competition_overrides.yaml $resultsdir/kompose_competition_overrides.yaml
+cp ../../../kompose_development_overrides.yaml $resultsdir/kompose_development_overrides.yaml

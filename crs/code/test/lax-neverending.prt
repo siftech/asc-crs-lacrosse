@@ -1,0 +1,41 @@
+do "./defaults.pl" || die "Can't do './defaults.pl': $@";
+# Intended to run forever, notably useful for debugging inside containers
+$run_in_compose = 1;
+
+#$cp_config = "../crs-sandbox-items/mock-cp-config.yaml";
+$cp_config = "../crs-sandbox-items/nginx-cp-config.yaml";
+
+our $experiment = '
+  (push :msg *debug-list*)
+  (push :amp *debug-list*)
+  (push :amp-deep *debug-list*)
+  (push :target *debug-list*)
+  (setf *run-fake-bridge* t)
+  (setf *lacrosse* t)
+  (setf *fake-bridge-script*
+    \'(
+       (1 ((:type :new-challenge-project)
+           (:target ((;;(:cp-address "")
+                        (:cp-address "")
+				)))))
+       (120000000000 ((:type :halt)))))
+';
+
+our $numfbs = 1;
+
+our $success_pattern = "Nevergonnahappen";
+
+do "./common.pl" || die "Can't do './common.pl': $@";
+
+$test = {
+    defaultIgnore => 1,
+    keywords => [ qw / lacrosse / ],
+    cleanup => \&condor_killer,
+    agents => [
+        @clean_and_start_agents,
+    ],
+};
+
+$test;
+
+# vim: set ft=perl :

@@ -1,0 +1,38 @@
+#!/usr/bin/perl
+
+
+## -------------------------------------------------------------------
+
+$/="##DUPLEND\n";	# set record separator
+$dupl=1;
+$numfbs=shift();
+
+while(<>)
+{
+  #warn "------------------------record is $_\n";
+  if ($numfbs){ s/XXXNUMFBSXXX/$numfbs/;}
+  if (/^##DUPL\s*:\s*(\d+)/)
+    {
+	warn "setting dupl to $1\n";
+	$dupl = $1;
+	s/\/\*\s*DUPL:\s*\d+\s*\*\///;
+	$orig = $_;
+	
+	for ($i=0;$i<$dupl;$i++)
+	  {
+		$offset=3+$i+$ENV{'CIRCA_BASEPORT'};
+		warn "fb$i exposing slime with port $offset\n";
+		s/XXXSLIMEPORTXXX/$offset/g;
+		s/\@/$i/g;
+		print;
+		$_=$orig;
+	  }
+	$dupl=1;
+    }
+  else { print; }
+#  if (/^\}/)
+#    {
+#	$dupl=1;
+#	print;
+#    }
+}

@@ -1,0 +1,9 @@
+#!/bin/bash
+# start-neo-fuzz-ccl
+
+# bash-ism to get location of script.
+thisdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd -P "$( dirname "$SOURCE" )" && /bin/pwd )"
+
+# in general, to be efficient,
+# this can't use ensure-image here b/c that would run the wait-for-container *after* anything passed in for execution in other args
+PRT_LISP=ccl $thisdir/start-nf-image neo-fuzz-ccl --network host -e NEO_FUZZ_SLIME_PORT "$@"

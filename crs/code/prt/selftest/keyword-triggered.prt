@@ -1,0 +1,25 @@
+# Hey EMACS, this should be in -*- perl -*- mode
+# ------------------------------------------------------------
+# COPYRIGHT START
+# COPYRIGHT END
+# ------------------------------------------------------------
+#
+
+$test = { 
+  description => "test if can tell whether test was triggered by a specific keyword",
+	# NOTE this only works if run with -k keyword! So it is not a default test...so need --all too
+  keywords => [ qw / prt self-test keyword / ],  
+  defaultIgnore => 1,	# ignored by default
+  agents => [ 
+    {
+      name         => "true", 
+      #command   => ["/bin/echo",sub { return(PRT::triggered_by_keyword("keyword") ?  "/bin/true" : "/bin/false");}],
+      command   => [sub { return(PRT::triggered_by_keyword("keyword") ?  "/bin/true" : "/bin/false");}],
+      exit_code    => 0,
+      comparo      => undef,
+    },
+  ]
+};
+  
+# Always end with a reference to the test specification hash reference.
+$test;
